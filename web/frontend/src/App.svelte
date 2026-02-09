@@ -6,7 +6,7 @@
   import EditorView from './components/EditorView.svelte';
   import CommandPalette from './components/CommandPalette.svelte';
 
-  let path = $state('');
+  let path = $state(getPathFromURL());
 
   function updatePath() {
     path = getPathFromURL();

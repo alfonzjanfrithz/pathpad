@@ -15,12 +15,16 @@
   let sseCleanup = null;
 
   async function loadPad() {
+    const targetPath = path; // capture at call time
     try {
-      const data = await getPad(path);
+      const data = await getPad(targetPath);
+      // Ignore stale responses if path changed during the fetch
+      if (path !== targetPath) return;
       content = data.content || '';
       lastSavedContent = content;
       saveStatus.set('');
     } catch (err) {
+      if (path !== targetPath) return;
       console.error('Failed to load pad:', err);
       saveStatus.set('error');
     }
@@ -55,13 +59,14 @@
     }, 500);
   }
 
-  function flushSave() {
+  function flushSave(savePath) {
     if (saveTimeout) {
       clearTimeout(saveTimeout);
       saveTimeout = null;
     }
-    if (content !== lastSavedContent && path) {
-      savePadBeacon(path, content, clientId);
+    const p = savePath !== undefined ? savePath : path;
+    if (content !== lastSavedContent && p) {
+      savePadBeacon(p, content, clientId);
       lastSavedContent = content;
     }
   }
@@ -98,10 +103,8 @@
   }
 
   onMount(() => {
-    loadPad();
-    setupSSE();
+    // loadPad() and setupSSE() are handled by the $effect below on initial run.
     window.addEventListener('force-save', onForceSave);
-    if (textareaEl) textareaEl.focus();
 
     return () => {
       flushSave();
@@ -119,7 +122,7 @@
     if (p !== prevPath) {
       untrack(() => {
         if (prevPath !== undefined) {
-          flushSave();
+          flushSave(prevPath);
         }
       });
       prevPath = p;
