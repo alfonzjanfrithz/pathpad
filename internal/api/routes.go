@@ -52,19 +52,30 @@ func NewRouter(cfg *config.Config, store *storage.SQLiteStore, cache *storage.Ca
 		r.Get("/events/*", h.Events)
 	})
 
-	// Static files.
-	fileServer := http.FileServer(http.FS(staticFS))
-	r.Handle("/static/*", fileServer)
+	// Strip the "static" prefix from the embedded FS so files are at root.
+	subFS, err := fs.Sub(staticFS, "static")
+	if err != nil {
+		panic("failed to create sub filesystem: " + err.Error())
+	}
+
+	// Serve Vite's hashed asset files.
+	fileServer := http.FileServer(http.FS(subFS))
+	r.Handle("/assets/*", fileServer)
+
+	// Serve manifest, service worker, favicon at root level.
+	r.Handle("/manifest.json", fileServer)
+	r.Handle("/sw.js", fileServer)
+	r.Handle("/favicon.ico", fileServer)
 
 	// Read index.html once for the SPA catch-all.
-	indexHTML, err := fs.ReadFile(staticFS, "static/index.html")
+	indexHTML, err := fs.ReadFile(subFS, "index.html")
 	if err != nil {
 		panic("failed to read index.html: " + err.Error())
 	}
 
 	// SPA catch-all: serve index.html for all other GET requests.
 	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
-		// Only serve SPA for GET requests that accept HTML.
+		// Only serve SPA for GET requests.
 		if r.Method != http.MethodGet {
 			http.Error(w, `{"error":"not found"}`, http.StatusNotFound)
 			return
