@@ -1,5 +1,5 @@
 <script>
-  import { onMount, onDestroy } from 'svelte';
+  import { onMount, onDestroy, untrack } from 'svelte';
   import { getPad, savePad, savePadBeacon } from '../lib/api.js';
   import { connectSSE } from '../lib/sse.js';
   import { clientId, connected, saveStatus } from '../lib/state.js';
@@ -110,9 +110,19 @@
     };
   });
 
+  // React to path changes only. flushSave() reads `content` ($state),
+  // so we wrap it in untrack() to prevent content changes from
+  // re-triggering this effect (which would cause loadPad on every keystroke).
+  let prevPath = undefined;
   $effect(() => {
-    if (path !== undefined) {
-      flushSave();
+    const p = path; // sole tracked dependency
+    if (p !== prevPath) {
+      untrack(() => {
+        if (prevPath !== undefined) {
+          flushSave();
+        }
+      });
+      prevPath = p;
       loadPad();
       setupSSE();
       if (textareaEl) textareaEl.focus();
