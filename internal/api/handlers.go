@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"dontpad/internal/models"
+	"dontpad/internal/sse"
 	"dontpad/internal/storage"
 )
 
@@ -14,6 +15,7 @@ import (
 type Handler struct {
 	Store          *storage.SQLiteStore
 	Cache          *storage.Cache
+	Broadcaster    *sse.Broadcaster
 	MaxContentSize int64
 }
 
@@ -108,6 +110,14 @@ func (h *Handler) SavePad(w http.ResponseWriter, r *http.Request) {
 	h.Cache.Invalidate(path)
 	h.Cache.Set(path, pad)
 
+	// Broadcast update event to SSE clients.
+	clientID := r.URL.Query().Get("client_id")
+	h.Broadcaster.Broadcast(path, sse.Event{
+		Type:     "update",
+		Content:  pad.Content,
+		ClientID: clientID,
+	})
+
 	jsonResponse(w, http.StatusOK, pad)
 }
 
@@ -136,6 +146,14 @@ func (h *Handler) DeletePad(w http.ResponseWriter, r *http.Request) {
 		h.Cache.InvalidatePrefix(path)
 	}
 
+	// Broadcast delete event to SSE clients.
+	clientID := r.URL.Query().Get("client_id")
+	h.Broadcaster.Broadcast(path, sse.Event{
+		Type:     "delete",
+		Path:     path,
+		ClientID: clientID,
+	})
+
 	jsonResponse(w, http.StatusOK, map[string]int64{"deleted": count})
 }
 
@@ -158,6 +176,22 @@ func (h *Handler) GetChildren(w http.ResponseWriter, r *http.Request) {
 	}
 
 	jsonResponse(w, http.StatusOK, map[string]interface{}{"children": children})
+}
+
+// Events handles GET /api/pad/events/*
+func (h *Handler) Events(w http.ResponseWriter, r *http.Request) {
+	path := extractPadPath(r, "/api/pad/events/")
+	if r.URL.Path == "/api/pad/events" || r.URL.Path == "/api/pad/events/" {
+		path = ""
+	}
+
+	clientID := r.URL.Query().Get("client_id")
+	if clientID == "" {
+		jsonError(w, http.StatusBadRequest, "client_id query parameter is required")
+		return
+	}
+
+	h.Broadcaster.ServeHTTP(w, r, path, clientID)
 }
 
 // Health handles GET /healthz

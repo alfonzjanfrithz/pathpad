@@ -11,6 +11,7 @@ import (
 
 	"dontpad/internal/api"
 	"dontpad/internal/config"
+	"dontpad/internal/sse"
 	"dontpad/internal/storage"
 )
 
@@ -30,10 +31,13 @@ func main() {
 	// Initialize cache.
 	cache := storage.NewCache(cfg.CacheTTL)
 
+	// Initialize SSE broadcaster.
+	broadcaster := sse.NewBroadcaster(cfg.SSEMaxClients, cfg.SSEKeepalive)
+
 	log.Printf("[startup] Database initialized successfully")
 
 	// Build router with all routes and middleware.
-	router := api.NewRouter(cfg, store, cache)
+	router := api.NewRouter(cfg, store, cache, broadcaster)
 
 	// Create HTTP server.
 	srv := &http.Server{
