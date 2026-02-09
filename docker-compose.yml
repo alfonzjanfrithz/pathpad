@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  pathpad:
+    # Replace <owner> with your GitHub username or org
+    image: ghcr.io/alfonzjanfrithz/pathpad:latest
+    container_name: pathpad
+    restart: unless-stopped
+    ports:
+      - "8085:8080"
+    volumes:
+      - /volume1/docker/pathpad/data:/data
+    environment:
+      - PATHPAD_DB_PATH=/data/pathpad.db
+      - PATHPAD_PORT=8080
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s

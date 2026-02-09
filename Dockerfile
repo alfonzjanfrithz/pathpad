@@ -19,13 +19,9 @@ RUN CGO_ENABLED=1 go build -o pathpad ./cmd/server/
 # Stage 3: Runtime
 FROM docker.io/library/alpine:3.20
 RUN apk add --no-cache ca-certificates
-RUN adduser -D -h /home/pathpad pathpad
-WORKDIR /home/pathpad
+RUN mkdir -p /data
 
 COPY --from=backend /app/pathpad /usr/local/bin/pathpad
-
-RUN mkdir -p /data && chown pathpad:pathpad /data
-USER pathpad
 
 ENV PATHPAD_DB_PATH=/data/pathpad.db
 ENV PATHPAD_PORT=8080
