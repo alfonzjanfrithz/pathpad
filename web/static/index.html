@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dontpad</title>
+  <link rel="stylesheet" href="/static/styles.css">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#ffffff">
+</head>
+<body>
+
+  <!-- Landing Page (root only) -->
+  <div id="landing" class="hidden">
+    <div class="landing-content">
+      <h1 class="landing-title">DONTPAD</h1>
+      <p class="landing-subtitle">The simplest way to share text online</p>
+      <form id="landing-form" class="landing-form">
+        <span class="landing-prefix" id="landing-prefix">dontpad/</span>
+        <input type="text" id="landing-input" placeholder="your-secret-page" autocomplete="off" spellcheck="false">
+        <button type="submit" class="landing-go">Go!</button>
+      </form>
+      <p class="landing-note">No login required</p>
+    </div>
+  </div>
+
+  <!-- Pad Editor View -->
+  <div id="pad-view" class="hidden">
+    <!-- Left Sidebar -->
+    <aside id="sidebar">
+      <div class="sidebar-top">
+        <button id="sidebar-toggle" class="sidebar-toggle" title="Toggle sidebar">&#9776;</button>
+      </div>
+
+      <div class="sidebar-body">
+        <div id="children-list" class="children-list"></div>
+      </div>
+
+      <div class="sidebar-footer">
+        <div class="new-child">
+          <input type="text" id="new-child-input" placeholder="new page..." autocomplete="off" spellcheck="false">
+          <button id="new-child-btn" class="new-child-btn" title="Create child page">+</button>
+        </div>
+        <div class="sidebar-status">
+          <span id="connection-status" class="status-dot" title="Disconnected">&#9679;</span>
+          <span id="save-status" class="save-text"></span>
+          <button id="delete-btn" class="delete-btn" title="Delete this pad and all children">&#128465;</button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Editor -->
+    <main id="editor-area">
+      <nav id="breadcrumbs" class="breadcrumbs"></nav>
+      <textarea id="editor" placeholder="Start typing..." spellcheck="false"></textarea>
+    </main>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

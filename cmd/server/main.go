@@ -13,6 +13,7 @@ import (
 	"dontpad/internal/config"
 	"dontpad/internal/sse"
 	"dontpad/internal/storage"
+	"dontpad/web"
 )
 
 func main() {
@@ -36,8 +37,8 @@ func main() {
 
 	log.Printf("[startup] Database initialized successfully")
 
-	// Build router with all routes and middleware.
-	router := api.NewRouter(cfg, store, cache, broadcaster)
+	// Build router with all routes, middleware, and embedded static files.
+	router := api.NewRouter(cfg, store, cache, broadcaster, web.StaticFiles)
 
 	// Create HTTP server.
 	srv := &http.Server{

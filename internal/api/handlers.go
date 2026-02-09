@@ -118,6 +118,16 @@ func (h *Handler) SavePad(w http.ResponseWriter, r *http.Request) {
 		ClientID: clientID,
 	})
 
+	// Notify the parent path so tabs viewing it can refresh their children list.
+	parentPath := models.ParentPath(path)
+	if path != "" {
+		h.Broadcaster.Broadcast(parentPath, sse.Event{
+			Type:     "children_changed",
+			Path:     parentPath,
+			ClientID: clientID,
+		})
+	}
+
 	jsonResponse(w, http.StatusOK, pad)
 }
 
@@ -153,6 +163,16 @@ func (h *Handler) DeletePad(w http.ResponseWriter, r *http.Request) {
 		Path:     path,
 		ClientID: clientID,
 	})
+
+	// Notify the parent path so tabs viewing it can refresh their children list.
+	parentPath := models.ParentPath(path)
+	if path != "" {
+		h.Broadcaster.Broadcast(parentPath, sse.Event{
+			Type:     "children_changed",
+			Path:     parentPath,
+			ClientID: clientID,
+		})
+	}
 
 	jsonResponse(w, http.StatusOK, map[string]int64{"deleted": count})
 }
