@@ -1,0 +1,115 @@
+name: Security Scan
+
+on:
+  schedule:
+    # Every Monday at 06:00 UTC
+    - cron: "0 6 * * 1"
+  push:
+    branches: [master]
+    paths:
+      - "Dockerfile"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  security-events: write
+
+jobs:
+  trivy-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build image for scanning
+        run: docker build -t pathpad:scan .
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: "pathpad:scan"
+          format: "sarif"
+          output: "trivy-results.sarif"
+          severity: "CRITICAL,HIGH"
+
+      - name: Upload Trivy scan results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: "trivy-results.sarif"
+
+      - name: Run Trivy and check for failures
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: "pathpad:scan"
+          format: "table"
+          severity: "CRITICAL,HIGH"
+          exit-code: "1"
+
+  update-base-images:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check for Alpine updates
+        id: check
+        run: |
+          # Pull latest alpine and check if our pinned version is outdated
+          CURRENT=$(grep 'FROM docker.io/library/alpine:' Dockerfile | tail -1 | sed 's/.*alpine://')
+          echo "current_alpine=$CURRENT" >> "$GITHUB_OUTPUT"
+
+          # Check latest Node 20 Alpine digest
+          NODE_DIGEST=$(docker pull docker.io/library/node:20-alpine 2>&1 | grep "Digest:" | awk '{print $2}')
+          echo "node_digest=$NODE_DIGEST" >> "$GITHUB_OUTPUT"
+
+          # Check latest Go 1.23 Alpine digest
+          GO_DIGEST=$(docker pull docker.io/library/golang:1.23-alpine 2>&1 | grep "Digest:" | awk '{print $2}')
+          echo "go_digest=$GO_DIGEST" >> "$GITHUB_OUTPUT"
+
+          # Build to see if anything changed
+          docker build --no-cache -t pathpad:update-check . 2>&1
+          echo "build_ok=true" >> "$GITHUB_OUTPUT"
+
+      - name: Run Trivy on fresh build
+        id: scan
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: "pathpad:update-check"
+          format: "table"
+          severity: "CRITICAL,HIGH"
+          exit-code: "0"
+
+      - name: Create update PR if base images changed
+        run: |
+          BRANCH="auto/update-base-images-$(date +%Y%m%d)"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Touch Dockerfile to force rebuild with latest base images
+          # Add a comment with the current date to ensure the file changes
+          sed -i "s/# Base image update:.*//" Dockerfile
+          echo "# Base image update: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> Dockerfile
+
+          if git diff --quiet; then
+            echo "No changes detected"
+            exit 0
+          fi
+
+          git checkout -b "$BRANCH"
+          git add Dockerfile
+          git commit -m "chore: update base images ($(date +%Y-%m-%d))"
+          git push -u origin "$BRANCH"
+
+          gh pr create \
+            --title "Update container base images ($(date +%Y-%m-%d))" \
+            --body "Automated weekly update to pull latest base image patches for Alpine, Node, and Go.
+
+          This PR rebuilds the container with fresh base images to pick up security patches.
+
+          Triggered by scheduled security scan." \
+            --label "dependencies"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
