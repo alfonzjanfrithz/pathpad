@@ -1,9 +1,15 @@
 package main
 
 import (
-	"fmt"
+	"context"
 	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
+	"dontpad/internal/api"
 	"dontpad/internal/config"
 	"dontpad/internal/storage"
 )
@@ -23,15 +29,42 @@ func main() {
 
 	// Initialize cache.
 	cache := storage.NewCache(cfg.CacheTTL)
-	_ = cache // will be wired into API handlers in Phase 2
 
 	log.Printf("[startup] Database initialized successfully")
 
-	// Verify DB connectivity.
-	if err := store.Ping(); err != nil {
-		log.Fatalf("[startup] Database ping failed: %v", err)
+	// Build router with all routes and middleware.
+	router := api.NewRouter(cfg, store, cache)
+
+	// Create HTTP server.
+	srv := &http.Server{
+		Addr:         ":" + cfg.Port,
+		Handler:      router,
+		ReadTimeout:  15 * time.Second,
+		WriteTimeout: 60 * time.Second, // longer for SSE
+		IdleTimeout:  60 * time.Second,
 	}
 
-	fmt.Printf("Phase 1 complete! Server would listen on :%s\n", cfg.Port)
-	fmt.Println("Storage and cache layers are ready.")
+	// Start server in a goroutine.
+	go func() {
+		log.Printf("[startup] Listening on http://0.0.0.0:%s", cfg.Port)
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("[startup] Server failed: %v", err)
+		}
+	}()
+
+	// Wait for interrupt signal for graceful shutdown.
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	sig := <-quit
+	log.Printf("[shutdown] Received signal: %v", sig)
+
+	// Give in-flight requests 10 seconds to complete.
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Printf("[shutdown] Server forced to shutdown: %v", err)
+	}
+
+	log.Println("[shutdown] Server stopped")
 }

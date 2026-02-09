@@ -2,6 +2,7 @@ package config
 
 import (
 	"os"
+	"path/filepath"
 	"strconv"
 	"time"
 )
@@ -21,9 +22,15 @@ type Config struct {
 
 // Load reads configuration from environment variables with defaults.
 func Load() *Config {
+	dbPath := envOrDefault("DONTPAD_DB_PATH", "./dontpad.db")
+	// Resolve to absolute path so it works regardless of working directory.
+	if abs, err := filepath.Abs(dbPath); err == nil {
+		dbPath = abs
+	}
+
 	return &Config{
 		Port:            envOrDefault("DONTPAD_PORT", "8080"),
-		DBPath:          envOrDefault("DONTPAD_DB_PATH", "./dontpad.db"),
+		DBPath:          dbPath,
 		MaxContentSize:  envOrDefaultInt64("DONTPAD_MAX_CONTENT_SIZE", 1048576),
 		CacheTTL:        time.Duration(envOrDefaultInt("DONTPAD_CACHE_TTL", 300)) * time.Second,
 		RateLimit:       envOrDefaultInt("DONTPAD_RATE_LIMIT", 100),

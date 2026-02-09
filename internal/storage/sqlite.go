@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"os"
+	"path/filepath"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -20,6 +22,14 @@ type SQLiteStore struct {
 
 // NewSQLiteStore opens (or creates) the SQLite database and runs migrations.
 func NewSQLiteStore(dbPath string) (*SQLiteStore, error) {
+	// Ensure the parent directory exists.
+	dir := filepath.Dir(dbPath)
+	if dir != "" && dir != "." {
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			return nil, fmt.Errorf("create database directory %q: %w", dir, err)
+		}
+	}
+
 	db, err := sql.Open("sqlite3", dbPath+"?_journal_mode=WAL&_busy_timeout=5000")
 	if err != nil {
 		return nil, fmt.Errorf("open database: %w", err)
