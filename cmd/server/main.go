@@ -9,17 +9,17 @@ import (
 	"syscall"
 	"time"
 
-	"dontpad/internal/api"
-	"dontpad/internal/config"
-	"dontpad/internal/sse"
-	"dontpad/internal/storage"
-	"dontpad/web"
+	"pathpad/internal/api"
+	"pathpad/internal/config"
+	"pathpad/internal/sse"
+	"pathpad/internal/storage"
+	"pathpad/web"
 )
 
 func main() {
 	cfg := config.Load()
 
-	log.Printf("[startup] Dontpad server starting on port %s", cfg.Port)
+	log.Printf("[startup] Pathpad server starting on port %s", cfg.Port)
 	log.Printf("[startup] DB path: %s", cfg.DBPath)
 
 	// Initialize SQLite store.

@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"strings"
 
-	"dontpad/internal/models"
-	"dontpad/internal/sse"
-	"dontpad/internal/storage"
+	"pathpad/internal/models"
+	"pathpad/internal/sse"
+	"pathpad/internal/storage"
 )
 
 // Handler holds dependencies for API handlers.

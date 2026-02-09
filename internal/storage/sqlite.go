@@ -10,7 +10,7 @@ import (
 
 	_ "github.com/mattn/go-sqlite3"
 
-	"dontpad/internal/models"
+	"pathpad/internal/models"
 )
 
 const currentSchemaVersion = 1

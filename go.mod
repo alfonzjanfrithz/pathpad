@@ -1,4 +1,4 @@
-module dontpad
+module pathpad
 
 go 1.23.6
 

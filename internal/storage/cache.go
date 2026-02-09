@@ -4,7 +4,7 @@ import (
 	"sync"
 	"time"
 
-	"dontpad/internal/models"
+	"pathpad/internal/models"
 )
 
 // CacheEntry holds a cached pad with expiration.

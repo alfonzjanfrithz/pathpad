@@ -22,22 +22,22 @@ type Config struct {
 
 // Load reads configuration from environment variables with defaults.
 func Load() *Config {
-	dbPath := envOrDefault("DONTPAD_DB_PATH", "./dontpad.db")
+	dbPath := envOrDefault("PATHPAD_DB_PATH", "./pathpad.db")
 	// Resolve to absolute path so it works regardless of working directory.
 	if abs, err := filepath.Abs(dbPath); err == nil {
 		dbPath = abs
 	}
 
 	return &Config{
-		Port:            envOrDefault("DONTPAD_PORT", "8080"),
+		Port:            envOrDefault("PATHPAD_PORT", "8080"),
 		DBPath:          dbPath,
-		MaxContentSize:  envOrDefaultInt64("DONTPAD_MAX_CONTENT_SIZE", 1048576),
-		CacheTTL:        time.Duration(envOrDefaultInt("DONTPAD_CACHE_TTL", 300)) * time.Second,
-		RateLimit:       envOrDefaultInt("DONTPAD_RATE_LIMIT", 100),
-		CORSOrigins:     envOrDefault("DONTPAD_CORS_ORIGINS", "*"),
-		SSEMaxClients:   envOrDefaultInt("DONTPAD_SSE_MAX_CLIENTS", 50),
-		SSEKeepalive:    time.Duration(envOrDefaultInt("DONTPAD_SSE_KEEPALIVE", 30)) * time.Second,
-		LogLevel:        envOrDefault("DONTPAD_LOG_LEVEL", "info"),
+		MaxContentSize:  envOrDefaultInt64("PATHPAD_MAX_CONTENT_SIZE", 1048576),
+		CacheTTL:        time.Duration(envOrDefaultInt("PATHPAD_CACHE_TTL", 300)) * time.Second,
+		RateLimit:       envOrDefaultInt("PATHPAD_RATE_LIMIT", 100),
+		CORSOrigins:     envOrDefault("PATHPAD_CORS_ORIGINS", "*"),
+		SSEMaxClients:   envOrDefaultInt("PATHPAD_SSE_MAX_CLIENTS", 50),
+		SSEKeepalive:    time.Duration(envOrDefaultInt("PATHPAD_SSE_KEEPALIVE", 30)) * time.Second,
+		LogLevel:        envOrDefault("PATHPAD_LOG_LEVEL", "info"),
 	}
 }
 

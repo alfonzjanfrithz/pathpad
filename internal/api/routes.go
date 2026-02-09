@@ -7,9 +7,9 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"dontpad/internal/config"
-	"dontpad/internal/sse"
-	"dontpad/internal/storage"
+	"pathpad/internal/config"
+	"pathpad/internal/sse"
+	"pathpad/internal/storage"
 )
 
 // NewRouter creates and configures the Chi router with all routes and middleware.

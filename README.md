@@ -1,229 +1,151 @@
-# Dontpad
+# Pathpad
 
-An open-source, self-hostable alternative to [dontpad.com](https://dontpad.com) with hierarchical path-based navigation. Users can create nested pads like `/mypage/hello` and `/mypage`, with navigation between parent and child pads.
+A fast, self-hostable notepad with hierarchical pages. Create nested pages like `/projects/todo` and `/projects/notes`, navigate between them, and collaborate in real time across browser tabs.
 
-## Features
-
-- **Hierarchical Paths** — Nested pad structure (`/parent/child/grandchild`)
-- **Implicit Pads** — Every URL is a valid pad; empty editor if no content exists
-- **Real-time Notifications** — SSE-based update notifications
-- **Auto-save** — Changes saved automatically as you type (debounced)
-- **REST API** — Vault-style prefixed API for CLI integration
-- **No Auth** — Public access by URL path
-- **Self-hostable** — Single binary, minimal memory footprint (~10-50MB)
+No login. No sign-up. Just open a URL and start typing.
 
 ## Quick Start
 
-### Prerequisites
-
-- **Go 1.21+** (with CGO enabled)
-- **GCC** (required by the SQLite driver)
-
-### Build & Run
+### Using a container (recommended)
 
 ```bash
-# Build
-CGO_ENABLED=1 go build -o dontpad ./cmd/server/
+# With Podman
+podman run -d --name pathpad -p 8080:8080 -v pathpad-data:/data pathpad
 
-# Run (creates dontpad.db in current directory)
-./dontpad
+# With Docker
+docker run -d --name pathpad -p 8080:8080 -v pathpad-data:/data pathpad
 ```
 
-The server starts on `http://localhost:8080` by default.
+Then open **http://localhost:8080** in your browser.
 
-### Docker
+### From a pre-built binary
+
+Download the binary for your platform, then:
 
 ```bash
-docker build -t dontpad .
-docker run -p 8080:8080 -v dontpad-data:/data dontpad
+./pathpad
 ```
+
+This starts the server on port 8080 and creates a `pathpad.db` file in the current directory.
+
+## How It Works
+
+### Pages
+
+Every URL path is a page. Visit `/meeting-notes` and you have a page. Visit `/meeting-notes/monday` and you have a child page under it.
+
+- Pages are created automatically when you visit a URL or type content
+- Content is saved automatically as you type (no save button needed)
+- Pages can be nested to any depth: `/a/b/c/d/e`
+
+### Navigation
+
+- **Breadcrumbs** at the top show where you are: `root / projects / todo` — each segment is clickable
+- **Sidebar** on the left shows child pages under the current page
+- **Landing page** at `/` lets you jump to any page by typing its name
+
+### Creating Pages
+
+There are multiple ways to create a new page:
+
+1. **From the sidebar** — type a name in the "new page..." input at the bottom and press Enter
+2. **From the command palette** — press `Ctrl+K`, type a path that doesn't exist yet, and select "Create /your-path"
+3. **From the URL bar** — navigate directly to any URL like `/my-new-page`
+
+### Deleting Pages
+
+- Click the trash icon in the sidebar footer
+- Or press `Ctrl+K` and select "Delete current page"
+
+Deleting a page also removes all its children.
+
+### Real-Time Sync
+
+Open the same page in multiple tabs or on different devices — changes appear instantly everywhere. The green dot in the sidebar indicates a live connection.
+
+## Keyboard Shortcuts
+
+| Shortcut | Action |
+|---|---|
+| `Ctrl+K` | Open command palette |
+| `Ctrl+S` | Force save current page |
+| `Ctrl+N` | Create a new page (opens palette with prefix) |
+| `Ctrl+\` | Toggle sidebar |
+| `Escape` | Close command palette |
+
+### Command Palette
+
+The command palette (`Ctrl+K`) lets you:
+
+- **Jump to any page** — fuzzy search across all your pages
+- **Create a new page** — type a path and select "Create /..."
+- **Run actions** — go to parent, go to root, toggle sidebar, delete page
+
+Use arrow keys to navigate and Enter to select.
 
 ## Configuration
 
-All configuration is via environment variables:
+All settings are optional environment variables:
 
 | Variable | Default | Description |
-|----------|---------|-------------|
-| `DONTPAD_PORT` | `8080` | Server port |
-| `DONTPAD_DB_PATH` | `./dontpad.db` | SQLite database file path |
-| `DONTPAD_MAX_CONTENT_SIZE` | `1048576` (1MB) | Max pad content size in bytes |
-| `DONTPAD_CACHE_TTL` | `300` (5 min) | In-memory cache TTL in seconds |
-| `DONTPAD_RATE_LIMIT` | `100` | Max requests per minute per IP |
-| `DONTPAD_CORS_ORIGINS` | `*` | Allowed CORS origins |
-| `DONTPAD_SSE_MAX_CLIENTS` | `50` | Max SSE connections per pad |
-| `DONTPAD_SSE_KEEPALIVE` | `30` | SSE keepalive interval in seconds |
-| `DONTPAD_LOG_LEVEL` | `info` | Log level (debug, info, warn, error) |
+|---|---|---|
+| `PATHPAD_PORT` | `8080` | Server port |
+| `PATHPAD_DB_PATH` | `./pathpad.db` | Database file location |
+| `PATHPAD_MAX_CONTENT_SIZE` | `1048576` | Max page content size (bytes, default 1 MB) |
+| `PATHPAD_RATE_LIMIT` | `100` | Max requests per minute per IP |
+| `PATHPAD_CORS_ORIGINS` | `*` | Allowed CORS origins |
+| `PATHPAD_LOG_LEVEL` | `info` | Log verbosity (debug, info, warn, error) |
 
-Example:
+### Example
 
 ```bash
-DONTPAD_PORT=3000 DONTPAD_DB_PATH=/var/lib/dontpad/data.db ./dontpad
+PATHPAD_PORT=3000 PATHPAD_DB_PATH=/var/lib/pathpad/data.db ./pathpad
 ```
 
-## REST API
+## Data & Backup
 
-All pad endpoints use the Vault-style prefix pattern: `/api/pad/{operation}/*path`.
+All data is stored in a single SQLite file (`pathpad.db` by default). To back up your data, simply copy this file while the server is stopped — or use SQLite's backup API for live backups.
 
-### Get Pad Content
+The database uses WAL mode for good read/write concurrency.
 
-```
-GET /api/pad/content/{path}
-```
+## Container Deployment
 
-Returns 200 for all paths. Non-existent pads return empty content with `updated_at: 0`.
+### Build the image
 
 ```bash
-curl http://localhost:8080/api/pad/content/mypage
+podman build -t pathpad .
 ```
 
-```json
-{
-  "path": "mypage",
-  "content": "hello world",
-  "updated_at": 1770622520,
-  "created_at": 1770622520
-}
-```
-
-### Create / Update Pad
-
-```
-PUT /api/pad/content/{path}
-```
-
-Upserts pad content. Pass `client_id` query param to identify the writer for SSE event filtering.
+### Run with persistent storage
 
 ```bash
-curl -X PUT -H "Content-Type: application/json" \
-  -d '{"content":"hello world"}' \
-  "http://localhost:8080/api/pad/content/mypage?client_id=my-uuid"
+podman run -d \
+  --name pathpad \
+  -p 8080:8080 \
+  -v pathpad-data:/data \
+  pathpad
 ```
 
-### Delete Pad (and Descendants)
-
-```
-DELETE /api/pad/content/{path}
-```
-
-Deletes the pad and all child pads recursively. Idempotent — returns `{"deleted": 0}` if pad didn't exist.
+### Custom configuration
 
 ```bash
-curl -X DELETE "http://localhost:8080/api/pad/content/mypage?client_id=my-uuid"
+podman run -d \
+  --name pathpad \
+  -p 3000:3000 \
+  -v pathpad-data:/data \
+  -e PATHPAD_PORT=3000 \
+  -e PATHPAD_LOG_LEVEL=debug \
+  pathpad
 ```
 
-```json
-{"deleted": 2}
-```
-
-### List Children
-
-```
-GET /api/pad/children/{path}
-```
-
-Returns direct child pads that have content, sorted alphabetically.
+### Stop and restart
 
 ```bash
-curl http://localhost:8080/api/pad/children/mypage
+podman stop pathpad
+podman start pathpad
 ```
 
-```json
-{
-  "children": [
-    {"path": "mypage/child", "updated_at": 1770622520}
-  ]
-}
-```
-
-### SSE Event Stream
-
-```
-GET /api/pad/events/{path}?client_id={uuid}
-```
-
-Server-Sent Events stream for real-time notifications. `client_id` is required.
-
-```bash
-curl -N "http://localhost:8080/api/pad/events/mypage?client_id=my-uuid"
-```
-
-Events:
-
-```
-data: {"type":"update","content":"new content","client_id":"writer-uuid"}
-
-data: {"type":"delete","path":"mypage","client_id":"deleter-uuid"}
-
-:keepalive
-```
-
-Clients should ignore events where `client_id` matches their own (self-echo filtering).
-
-### Health Check
-
-```
-GET /healthz
-```
-
-```json
-{"status": "ok", "db": "ok"}
-```
-
-Returns 200 if healthy, 503 if the database is unreachable.
-
-## Path Rules
-
-- **Allowed characters**: lowercase alphanumeric, `-`, `_`
-- **Case**: All paths lowercased on input
-- **Max depth**: 10 levels
-- **Max segment length**: 64 characters
-- **Max total path length**: 512 characters
-- **Reserved prefixes**: `api`, `static`, `healthz`, `manifest.json`, `sw.js`, `favicon.ico`
-
-## Architecture
-
-```
-Browser
-    |
-    +-- HTTP GET/PUT/DELETE --> REST API (/api/pad/...)
-    +-- SSE Stream          --> Update notifications
-    +-- Static Files        --> HTML/CSS/JS
-    |
-Go Server
-    |
-    +-- HTTP Router (Chi)   --> API handlers
-    +-- SSE Broadcaster     --> Event distribution
-    +-- In-Memory Cache     --> Fast reads (5 min TTL)
-    +-- SQLite (WAL mode)   --> Persistent storage
-    +-- Graceful Shutdown   --> Clean connection drain
-```
-
-## Project Structure
-
-```
-dontpad/
-├── cmd/server/main.go          # Entry point, config, graceful shutdown
-├── internal/
-│   ├── api/
-│   │   ├── handlers.go         # HTTP handlers (CRUD, children, health, SSE)
-│   │   ├── routes.go           # Chi route definitions
-│   │   └── middleware.go       # Logging, recovery, CORS, rate limiting
-│   ├── storage/
-│   │   ├── sqlite.go           # SQLite operations + migrations
-│   │   └── cache.go            # In-memory cache with TTL
-│   ├── sse/
-│   │   └── broadcaster.go      # SSE event broadcasting + keepalive
-│   ├── models/
-│   │   └── pad.go              # Pad struct, path validation/normalization
-│   └── config/
-│       └── config.go           # Env var parsing with defaults
-├── web/static/                  # Frontend files (Phase 4)
-├── go.mod
-├── go.sum
-├── Dockerfile
-├── SPEC.md
-└── README.md
-```
+Your data persists in the `pathpad-data` volume across restarts.
 
 ## License
 

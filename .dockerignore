@@ -1,0 +1,15 @@
+pathpad
+pathpad.exe
+*.db
+*.db-wal
+*.db-shm
+*.db-journal
+web/frontend/node_modules/
+web/static/
+sample_screenshot/
+.git/
+.gitignore
+.vscode/
+.idea/
+README.md
+SPEC.md
