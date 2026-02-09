@@ -132,5 +132,5 @@
   oninput={handleInput}
   placeholder="Start typing..."
   spellcheck="false"
-  class="w-full flex-1 border-none outline-none resize-none px-7 py-6 font-mono text-lg leading-8 text-gray-900 bg-white placeholder:text-gray-300"
+  class="w-full flex-1 border-none outline-none resize-none px-4 py-4 md:px-7 md:py-6 font-mono text-base md:text-lg leading-7 md:leading-8 text-gray-900 bg-white placeholder:text-gray-300"
 ></textarea>

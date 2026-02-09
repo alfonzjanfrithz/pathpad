@@ -115,7 +115,7 @@
   onkeydown={() => {}}
 >
   <!-- Palette -->
-  <div class="w-full max-w-2xl bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden">
+  <div class="w-full max-w-2xl mx-4 bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden">
     <!-- Input -->
     <div class="flex items-center px-6 border-b border-gray-100">
       <span class="text-gray-400 text-lg mr-3">⌘</span>
@@ -156,8 +156,8 @@
       <div class="px-6 py-10 text-center text-lg text-gray-400">No results</div>
     {/if}
 
-    <!-- Footer hints -->
-    <div class="px-6 py-3.5 border-t border-gray-100 text-base text-gray-400 flex gap-6">
+    <!-- Footer hints (desktop only) -->
+    <div class="hidden md:flex px-6 py-3.5 border-t border-gray-100 text-base text-gray-400 gap-6">
       <span><kbd class="px-2 py-1 bg-gray-100 rounded text-gray-500 font-mono text-base">↑↓</kbd> navigate</span>
       <span><kbd class="px-2 py-1 bg-gray-100 rounded text-gray-500 font-mono text-base">↵</kbd> select</span>
       <span><kbd class="px-2 py-1 bg-gray-100 rounded text-gray-500 font-mono text-base">esc</kbd> close</span>

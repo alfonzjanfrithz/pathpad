@@ -24,6 +24,9 @@ sidebarCollapsed.subscribe((v) => {
   localStorage.setItem('sidebarCollapsed', String(v));
 });
 
+/** Whether the mobile sidebar drawer is open. */
+export const mobileMenuOpen = writable(false);
+
 /** Whether the command palette is open. */
 export const paletteOpen = writable(false);
 
