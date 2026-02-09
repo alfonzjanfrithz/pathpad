@@ -106,9 +106,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Download all artifacts
+      - name: Download binary artifacts
         uses: actions/download-artifact@v4
         with:
+          pattern: pathpad-*
           path: artifacts
 
       - name: Prepare release assets
