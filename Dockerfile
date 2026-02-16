@@ -29,3 +29,4 @@ EXPOSE 8080
 VOLUME ["/data"]
 
 CMD ["pathpad"]
+# Base image update: 2026-02-16T07:13:24Z
